@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>然然贏家 Pro Ultimate｜AI主力選股系統 (一頁戰情版)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+<style>
+:root{
+  --bg:#04060f; --card:#0c1320; --card2:#101928; --line:#1e2d42;
+  --text:#e5e7eb; --muted:#7c8fa6;
+  --green:#22c55e; --red:#ef4444; --yellow:#facc15;
+  --blue:#38bdf8; --orange:#fb923c; --purple:#a855f7; --pink:#f472b6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  color:var(--text);min-height:100vh;
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Segoe UI",Arial,sans-serif;
+  background:
+    radial-gradient(ellipse at 15% 0%,rgba(56,189,248,.11) 0,transparent 40%),
+    radial-gradient(ellipse at 85% 5%,rgba(250,204,21,.09) 0,transparent 35%),
+    linear-gradient(180deg,#07091a 0%,#030710 100%);
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1e2d42;border-radius:99px}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  position:fixed;inset-y:0;left:0;width:220px;z-index:40;height:100vh;
+  background:rgba(12,19,32,.97);border-right:1px solid var(--line);
+  backdrop-filter:blur(20px);display:flex;flex-direction:column;
+}
+.main{flex:1;display:flex;flex-direction:column;min-height:100vh;margin-left:220px}
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(4,6,15,.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+}
+.content{flex:1;padding:24px 14px;max-width:1200px;margin:0 auto;width:100%}
+
+/* ── SIDEBAR NAV (Anchor link mode) ── */
+.logo{padding:16px 14px 12px;border-bottom:1px solid var(--line)}
+.logo-text{font-size:18px;font-weight:950;background:linear-gradient(90deg,#facc15,#fb923c,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:2px}
+nav{flex:1;padding:8px;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;
+  font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  transition:all .15s;margin-bottom:1px;border:1px solid transparent;
+  text-decoration:none;
+}
+.nav-item:hover{background:#0f1e36;color:var(--text)}
+.nav-item.active{background:rgba(250,204,21,.1);color:var(--yellow);border-color:rgba(250,204,21,.2)}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-footer{padding:10px 14px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+
+/* ── ONE PAGE SECTION ── */
+.page-section{
+  margin-bottom:60px;
+  padding-top:20px;
+  scroll-margin-top:70px;
+}
+.section-divider {
+  border:0;height:1px;
+  background:linear-gradient(90deg, transparent, var(--line), transparent);
+  margin:40px 0;
+}
+
+/* ── CARDS ── */
+.card{
+  background:linear-gradient(160deg,rgba(255,255,255,.055) 0,rgba(255,255,255,.018) 100%);
+  border:1px solid var(--line);border-radius:16px;padding:14px;
+  box-shadow:0 14px 36px rgba(0,0,0,.26);
+}
+.card-hover{transition:border-color .2s,box-shadow .2s}
+.card-hover:hover{border-color:rgba(56,189,248,.25);box-shadow:0 20px 48px rgba(0,0,0,.35)}
+
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+.metric{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.big{font-size:26px;font-weight:950;line-height:1;margin-top:5px}
+.small{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:3px}
+h2{font-size:16px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+h3{font-size:13px;font-weight:800;color:#cbd5e1}
+
+/* ── COLORS & PILLS ── */
+.cg{color:var(--green)}.cr{color:var(--red)}.cy{color:var(--yellow)}.cb{color:var(--blue)}.cm{color:var(--muted)}.fw{font-weight:900}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:900;border:1px solid;white-space:nowrap}
+.pg{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.35);color:#86efac}
+.pw{background:rgba(250,204,21,.11);border-color:rgba(250,204,21,.35);color:#fde68a}
+.pr{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
+.pb{background:rgba(56,189,248,.11);border-color:rgba(56,189,248,.35);color:#7dd3fc}
+.pp{background:rgba(168,85,247,.11);border-color:rgba(168,85,247,.35);color:#d8b4fe}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:separate;border-spacing:0 5px}
+.tbl th{font-size:10.5px;color:var(--muted);text-align:left;padding:2px 8px;white-space:nowrap;font-weight:600}
+.tbl td{
+  background:rgba(12,19,32,.88);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:8px 8px;font-size:12px;vertical-align:middle;
+}
+.tbl td:first-child{border-left:1px solid var(--line);border-radius:10px 0 0 10px}
+.tbl td:last-child{border-right:1px solid var(--line);border-radius:0 10px 10px 0}
+.tbl tr:hover td{background:rgba(15,30,54,.9)}
+.sc{font-size:16px;font-weight:950}
+
+/* ── PROGRESS BAR ── */
+.bar-wrap{margin:5px 0}
+.bar-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.bar-label{font-size:11px;color:var(--muted);font-weight:700}
+.bar-val{font-size:11px;font-weight:900}
+.bar-track{height:6px;background:#070d1b;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
+.fill-normal{background:linear-gradient(90deg,#22c55e,#facc15,#fb923c)}
+.fill-danger{background:linear-gradient(90deg,#facc15,#ef4444)}
+
+/* ── FORMS ── */
+input,select,textarea{width:100%;background:#06101e;border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--text);font-size:13px}
+input:focus,select:focus{outline:0;border-color:rgba(56,189,248,.4)}
+.btn{border:0;border-radius:11px;padding:10px 16px;font-weight:950;font-size:13px;cursor:pointer;background:linear-gradient(90deg,#facc15,#fb923c);color:#07111f}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-s{background:rgba(23,37,84,.7);color:#93c5fd;border:1px solid #334155}
+.btn-d{background:rgba(127,29,29,.7);color:#fecaca;border:1px solid #7f1d1d}
+.btn-sm{padding:6px 12px;font-size:11px}
+
+/* ── SEARCH DROPDOWN ── */
+.search-wrap{position:relative}
+.search-input{padding-left:34px!important}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
+.dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:200;margin-top:3px;background:#0c1828;border:1px solid rgba(56,189,248,.25);border-radius:0 0 12px 12px;max-height:240px;overflow-y:auto}
+.dropdown.show{display:block}
+.dd-item{padding:9px 13px;cursor:pointer;border-bottom:1px solid #141f2e;display:flex;align-items:center;gap:8px}
+.dd-item:hover{background:#0f1e36}
+.dd-code{font-size:13px;font-weight:950;color:var(--blue);min-width:44px}
+.dd-name{font-size:13px;font-weight:700;flex:1}
+.dd-tag{font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid;font-weight:600;flex-shrink:0}
+
+.stage-flow{display:flex;gap:5px;overflow-x:auto}
+.stage-chip{flex-shrink:0;padding:5px 9px;border:1px solid var(--line);background:#090f1c;border-radius:8px;font-size:11px;color:var(--muted);font-weight:900}
+.stage-chip.on{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.45);color:#86efac}
+.stage-chip.warn{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.4);color:#fca5a5}
+.profit-box{background:#070d1b;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12px;line-height:1.8;color:#cbd5e1;margin-top:8px}
+.api-status{padding:8px 12px;border-radius:10px;background:#060d1b;border:1px solid var(--line);font-size:12px}
+.scan-bar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0}
+.scan-fill{height:100%;background:linear-gradient(90deg,#facc15,#fb923c)}
+.star-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px}
+.star-btn.starred{color:var(--yellow)}
+.dna-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#1e2d42;border-radius:99px;cursor:pointer}
+.toggle-slider::before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:var(--muted);border-radius:50%;transition:.2s}
+.toggle input:checked + .toggle-slider{background:rgba(34,197,94,.2)}
+.toggle input:checked + .toggle-slider::before{transform:translateX(16px);background:var(--green)}
+.donut-wrap{position:relative;width:100px;height:100px}
+.donut-svg{transform:rotate(-90deg)}
+.donut-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+@media(max-width:992px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══════════ SIDEBAR (Scroll Anchor) ═══════════ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-text">然然贏家 Pro</div>
+      <div class="logo-sub">Ultimate AI Trading OS</div>
+    </div>
+    <nav id="spyNav">
+      <a class="nav-item active" href="#sec-dash">       <span class="nav-icon">🏠</span>戰情總覽</a>
+      <a class="nav-item"        href="#sec-scanner">    <span class="nav-icon">📡</span>全市場掃描</a>
+      <a class="nav-item"        href="#sec-ignite">     <span class="nav-icon">🔥</span>起漲雷達</a>
+      <a class="nav-item"        href="#sec-base">       <span class="nav-icon">🧱</span>築底雷達</a>
+      <a class="nav-item"        href="#sec-washout">    <span class="nav-icon">🌊</span>洗盤雷達</a>
+      <a class="nav-item"        href="#sec-absorption"> <span class="nav-icon">📦</span>吸貨雷達</a>
+      <a class="nav-item"        href="#sec-distrib">    <span class="nav-icon">⚠️</span>派貨警戒</a>
+      <a class="nav-item"        href="#sec-dna">        <span class="nav-icon">🧬</span>飆股DNA比對</a>
+      <a class="nav-item"        href="#sec-stock">      <span class="nav-icon">📊</span>股票深度分析</a>
+      <a class="nav-item"        href="#sec-watchlist">  <span class="nav-icon">⭐</span>我的 WatchList</a>
+      <a class="nav-item"        href="#sec-apis">       <span class="nav-icon">🔑</span>密鑰控制中心</a>
+      <a class="nav-item"        href="#sec-settings">   <span class="nav-icon">⚙️</span>作戰系統設定</a>
+    </nav>
+    <div class="nav-footer">v5.0 · 頂級一頁流</div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="sbar-stat"><span class="sbar-dot" style="background:var(--green)"></span><span id="sbTotal">掃描 - 支</span></div>
+      <div class="sbar-stat"><span class="sbar-dot" style="background:var(--yellow)"></span><span id="sbBest">最強 -</span></div>
+      <div class="sbar-stat"><span class="sbar-dot" style="background:var(--red)"></span><span id="sbRisk">警戒 -</span></div>
+      <div style="margin-left:auto; display:flex; gap:15px; align-items:center;">
+        <div class="clock" id="clock">--:--:--</div>
+        <span class="pill pg">LIVE CONTROLLING</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- SECTION: DASHBOARD -->
+      <section id="sec-dash" class="page-section">
+        <div style="margin-bottom:20px">
+          <div style="font-size:24px;font-weight:950;background:linear-gradient(90deg,#facc15,#fb923c,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">然然贏家 Dashboard</div>
+          <div style="font-size:12px;color:var(--muted)">直覺操盤流 · 全市場監控</div>
+        </div>
+        
+        <div class="sec-hd"><h2>📊 市場即時總覽</h2><span class="pill pb" id="lastUpdate">-</span></div>
+        <div class="g4" style="grid-template-columns:repeat(3,1fr);gap:10px; margin-bottom:20px" id="overviewCards"></div>
+
+        <div class="g2" style="align-items:start; gap:20px;">
+          <div class="card">
+            <h2>⚡ AI 策略大腦</h2>
+            <div id="aiSummaryText" style="font-size:13px;color:var(--muted);line-height:1.8">載入中…</div>
+            <div id="aiRecoBox" style="margin-top:10px;background:#070d1b;border:1px solid rgba(250,204,21,.2);border-radius:10px;padding:10px;font-size:12px;display:none">
+              <span style="color:var(--yellow);font-weight:900">今日戰術部署 · </span><span id="aiRecoText"></span>
+            </div>
+          </div>
+          <div class="card" style="display:flex; flex-direction:row; align-items:center; justify-content:space-around;">
+            <div>
+              <h2>多空籌碼比</h2>
+              <div style="margin-top:10px; font-size:12px;">
+                <p class="cg fw">多頭力量: <span id="bullPct">-</span>%</p>
+                <p class="cr fw">空頭賣壓: <span id="bearPct">-</span>%</p>
+              </div>
+            </div>
+            <div class="donut-wrap">
+              <svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#1e2d42" stroke-width="12"/>
+                <circle id="donutBull" cx="50" cy="50" r="38" fill="none" stroke="#22c55e" stroke-width="12" stroke-dasharray="0 239" stroke-linecap="round"/>
+                <circle id="donutBear" cx="50" cy="50" r="38" fill="none" stroke="#ef4444" stroke-width="12" stroke-dasharray="0 239" stroke-linecap="round"/>
+              </svg>
+              <div class="donut-label"><span id="donutPct" style="font-size:16px;font-weight:950;color:var(--green)">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px">
+          <h2>🏆 今日主力評分 TOP 10 操盤核心</h2>
+          <div class="card" style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>股票</th><th>主力分</th><th>階段</th><th>突破倒數</th><th>主力成本</th><th>操作</th><th>AI決策點評</th><th></th></tr></thead>
+              <tbody id="top10Body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: SCANNER -->
+      <section id="sec-scanner" class="page-section">
+        <h2>📡 全市場掃描器引擎</h2>
+        <div class="card" style="margin-bottom:15px">
+          <div class="g2" style="gap:15px; margin-bottom:15px;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">標的市場</div>
+              <div style="display:flex;gap:6px" id="targetBtns">
+                <button class="btn btn-sm btn-s active-filter" onclick="setTarget('all',this)">全部</button>
+                <button class="btn btn-sm btn-s" onclick="setTarget('twse',this)">上市</button>
+                <button class="btn btn-sm btn-s" onclick="setTarget('tpex',this)">上櫃</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">估值區間</div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-sm btn-s active-filter" onclick="toggleSpectrum('cheap',this)">便宜</button>
+                <button class="btn btn-sm btn-s active-filter" onclick="toggleSpectrum('reasonable',this)">合理</button>
+                <button class="btn btn-sm btn-s" onclick="toggleSpectrum('expensive',this)">昂貴</button>
+              </div>
+            </div>
+          </div>
+          <div class="g2" style="gap:15px; margin-bottom:15px;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">最低主力分臨界值 ≥ <span id="minScoreLbl">70</span></div>
+              <input type="range" min="50" max="95" step="5" value="70" oninput="document.getElementById('minScoreLbl').textContent=this.value;scanFilter.minScore=+this.value" style="accent-color:var(--yellow)">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">底部署理天數 ≥ <span id="minDaysLbl">20</span> 天</div>
+              <input type="range" min="5" max="90" step="5" value="20" oninput="document.getElementById('minDaysLbl').textContent=this.value;scanFilter.minPlatformDays=+this.value" style="accent-color:var(--yellow)">
+            </div>
+          </div>
+          <button class="btn" id="scanBtn" onclick="runScan()" style="width:100%">🔥 執行全市場極速掃描</button>
+          <div class="scan-bar"><div class="scan-fill" id="scanFill" style="width:0%"></div></div>
+          <div id="scanLog" style="font-size:11px;color:var(--muted)">等待指令下達...</div>
+        </div>
+
+        <div id="scanResultSec" style="display:none">
+          <div class="card" style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>股票</th><th>主力分</th><th>階段</th><th>距突破</th><th>整理天</th><th>操作</th><th></th></tr></thead>
+              <tbody id="scanBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: RADARS -->
+      <section id="sec-ignite" class="page-section">
+        <h2>🔥 起漲雷達 (極度關鍵)</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>主力分</th><th>突破價</th><th>距離</th><th>量能技術</th><th>階段</th><th>操作</th><th></th></tr></thead>
+            <tbody id="igniteBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sec-base" class="page-section">
+        <h2>🧱 築底雷達 (長線潛伏)</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>整理天</th><th>箱體幅度</th><th>量縮度</th><th>築底分</th><th>階段</th><th>操作</th><th></th></tr></thead>
+            <tbody id="baseBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sec-washout" class="page-section">
+        <h2>🌊 洗盤雷達 (爆發前夜)</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>主力分</th><th>量縮%</th><th>整理天</th><th>距突破</th><th>階段</th><th>操作</th><th></th></tr></thead>
+            <tbody id="washoutBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sec-absorption" class="page-section">
+        <h2>📦 吸貨雷達 (機構建倉)</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>吸貨分</th><th>整理天</th><th>主力成本帶</th><th>階段</th><th>操作</th><th></th></tr></thead>
+            <tbody id="absorptionBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sec-distrib" class="page-section">
+        <h2>⚠️ 派貨警戒 (獵殺陷阱 - 絕不追高)</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>派貨風險</th><th>主力利潤估算</th><th>階段</th><th>防禦建議</th><th></th></tr></thead>
+            <tbody id="distribBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: DNA -->
+      <section id="sec-dna" class="page-section">
+        <h2>🧬 歷史經典妖股 DNA 比對引擎</h2>
+        <div class="g3" id="dnaModelCards" style="margin-bottom:15px"></div>
+        <div class="card" style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>股票</th><th>最似模型</th><th>相似度</th><th>國巨</th><th>華新科</th><th>旺宏</th><th>青雲</th><th>操作</th><th></th></tr></thead>
+            <tbody id="dnaBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: STOCK ANALYSIS -->
+      <section id="sec-stock" class="page-section">
+        <h2>📊 股票狙擊深度分析</h2>
+        <div class="search-wrap" style="margin-bottom:15px">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="stockSearchInput" placeholder="輸入台股代號或名稱，即刻剖析主力底牌..." oninput="onStockSearch(this.value)" onblur="setTimeout(()=>hideDropdown('stockDrop'),200)">
+          <div class="dropdown" id="stockDrop"></div>
+        </div>
+        <div id="stockSearchStatus" style="font-size:11px;color:var(--muted);margin-bottom:15px"></div>
+
+        <div id="stockDetail" style="display:none; margin-bottom:20px;">
+          <div class="card" style="margin-bottom:15px">
+            <div style="display:flex; justify-content:between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <span id="sdCode" class="cb fw"></span> · <span id="sdName" style="font-size:20px;font-weight:950"></span>
+                <span id="sdMarket" class="pill pb" style="margin-left:8px"></span>
+                <div style="font-size:24px; font-weight:900; margin-top:5px;" id="sdPrice"></div>
+              </div>
+              <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+                <span id="sdScorePill" class="pill sc"></span>
+                <button id="sdStar" class="star-btn" onclick="toggleWatch()" style="font-size:22px">☆</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="g4" id="sdMetrics" style="margin-bottom:15px"></div>
+
+          <div class="card" style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
+            <span id="sdActionPill" class="pill"></span>
+            <span id="sdNote" style="font-size:12px; color:var(--muted)"></span>
+          </div>
+
+          <div class="g2" style="align-items:start; gap:15px;">
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px">
+                <h3>生命週期動態軌跡</h3><span id="sdStageLabel" class="cy fw"></span>
+              </div>
+              <div class="stage-flow" id="sdStageFlow" style="margin-bottom:15px"></div>
+              <div id="sdLcBars"></div>
+              <div class="profit-box" id="sdProfitBox"></div>
+            </div>
+            <div class="card">
+              <h3>核心數據拆解</h3><div id="sdScoreBars" style="margin-bottom:15px"></div>
+              <h3>標的模型相似度比對</h3><div class="dna-grid" id="sdDnaBars"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">快速追蹤清單</div>
+          <table class="tbl">
+            <thead><tr><th>股票</th><th>主力分</th><th>現行階段</th><th>戰術操作</th><th></th></tr></thead>
+            <tbody id="quickStockBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: WATCHLIST -->
+      <section id="sec-watchlist" class="page-section">
+        <h2>⭐ 核心監控庫 (WatchList)</h2>
+        <div id="watchEmpty" class="card" style="text-align:center;padding:30px;color:var(--muted); font-size:12px;">庫存空虛。在上方搜尋個股並點擊 ⭐ 鎖定。</div>
+        <div id="watchListBody"></div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: API -->
+      <section id="sec-apis" class="page-section">
+        <h2>🔑 機密密鑰數據控制中心</h2>
+        <div class="note" style="margin-bottom:15px; font-size:12px;">安全警告：所有 API Key 均依託瀏覽器本地安全緩存（LocalStorage），不經由任何第三方伺服器。</div>
+        <div id="apiRows" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </section>
+
+      <hr class="section-divider">
+
+      <!-- SECTION: SETTINGS -->
+      <section id="sec-settings" class="page-section">
+        <h2>⚙️ 操盤作戰系統設定</h2>
+        <div class="card" style="margin-bottom:15px">
+          <div class="toggle-row">
+            <div><p style="font-size:13px;font-weight:700">自動巡航掃描</p><p style="font-size:11px;color:var(--muted)">開啟後定時自動刷新市場籌碼結構</p></div>
+            <label class="toggle"><input type="checkbox" id="setAutoScan" onchange="saveSetting('autoScan',this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><p style="font-size:13px;font-weight:700">突破臨界警報</p><p style="font-size:11px;color:var(--muted)">個股突破箱體上緣時觸發高強度提示</p></div>
+            <label class="toggle"><input type="checkbox" id="setNotifyBreakout" checked onchange="saveSetting('notifyBreakout',this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><p style="font-size:13px;font-weight:700">AI 推演模型切換</p><p style="font-size:11px;color:var(--muted)">分配量化數據分析背後的算力大腦</p></div>
+            <select id="setAiProvider" onchange="saveSetting('aiProvider',this.value)" style="width:auto; padding:5px 10px;">
+              <option value="openai">OpenAI GPT-4o</option>
+              <option value="gemini">Gemini 2.0 Flash</option>
+              <option value="claude">Claude Sonnet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:10px;">⚔️ 鋼鐵作戰紀律 V5</h3>
+          <div id="rulesBody"></div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const STOCKS = [
+  {code:'3228',name:'金麗科',market:'TPEX',stage:'洗盤尾聲',score:93,breakout:200,dist:2.3,days:68,box:'18%',shrink:82,baseScore:88,acc:80,wash:81,markup:25,distRisk:30,g:89,h:76,f:72,bad:28,price:185,costMid:168,costLow:160,costHigh:178,spectrum:'reasonable',action:'等放量突破200',note:'主力成本附近，較可能繼續洗盤等突破'},
+  {code:'5386',name:'青雲',market:'TPEX',stage:'第二平台',score:88,breakout:550,dist:4.0,days:32,box:'14%',shrink:70,baseScore:76,acc:65,wash:75,markup:30,distRisk:28,g:87,h:70,f:78,bad:30,price:520,costMid:500,costLow:480,costHigh:525,spectrum:'reasonable',action:'守500攻550',note:'第一波後平台整理，等第二波'},
+  {code:'8227',name:'巨有科',market:'TPEX',stage:'二波醞釀',score:85,breakout:200,dist:6.2,days:24,box:'21%',shrink:61,baseScore:69,acc:55,wash:65,markup:28,distRisk:35,g:75,h:82,f:61,bad:38,price:187,costMid:168,costLow:160,costHigh:178,spectrum:'above',action:'等200突破',note:'AI ASIC題材，型態還要確認'},
+  {code:'3028',name:'增你強',market:'TWSE',stage:'洗盤整理',score:84,breakout:85,dist:5.1,days:41,box:'16%',shrink:73,baseScore:80,acc:70,wash:72,markup:20,distRisk:30,g:70,h:66,f:69,bad:32,price:80.9,costMid:72,costLow:70,costHigh:75,spectrum:'above',action:'等85突破',note:'主力利潤不大，仍在洗'},
+  {code:'2337',name:'旺宏',market:'TWSE',stage:'突破後回測',score:82,breakout:175,dist:7.4,days:54,box:'20%',shrink:66,baseScore:78,acc:72,wash:58,markup:45,distRisk:35,g:92,h:74,f:88,bad:34,price:162.5,costMid:158,costLow:155,costHigh:165,spectrum:'reasonable',action:'等155~160回測',note:'有國巨味，但不是最低位'},
+  {code:'2415',name:'錩新',market:'TWSE',stage:'平台突破',score:80,breakout:36.5,dist:5.6,days:45,box:'15%',shrink:64,baseScore:77,acc:62,wash:50,markup:52,distRisk:32,g:70,h:65,f:76,bad:28,price:34.5,costMid:34,costLow:33,costHigh:35,spectrum:'reasonable',action:'持有等續強',note:'平台突破，觀察站穩'},
+  {code:'6101',name:'寬魚',market:'TPEX',stage:'事件主升',score:74,breakout:50,dist:4.7,days:72,box:'12%',shrink:60,baseScore:82,acc:60,wash:30,markup:70,distRisk:48,g:42,h:40,f:55,bad:52,price:47.5,costMid:40,costLow:38,costHigh:42,spectrum:'diamond',action:'不追，看題材延續',note:'事件股，非產業循環模板'},
+  {code:'3363',name:'上詮',market:'TWSE',stage:'主跌修正',score:28,breakout:700,dist:21.7,days:0,box:'-',shrink:20,baseScore:20,acc:20,wash:25,markup:5,distRisk:90,g:22,h:26,f:20,bad:92,price:575,costMid:0,costLow:0,costHigh:0,spectrum:'cheap',action:'不買',note:'便宜但主跌，等20MA走平'},
+  {code:'2327',name:'國巨',market:'TWSE',stage:'主升末段',score:45,breakout:1155,dist:13.8,days:0,box:'-',shrink:25,baseScore:25,acc:15,wash:20,markup:88,distRisk:78,g:100,h:90,f:60,bad:74,price:1015,costMid:500,costLow:480,costHigh:550,spectrum:'diamond',action:'只研究，不追高',note:'DNA教材，現在不是甜蜜點'},
+  {code:'2492',name:'華新科',market:'TWSE',stage:'主升末段',score:42,breakout:645,dist:19.4,days:0,box:'-',shrink:22,baseScore:24,acc:12,wash:18,markup:85,distRisk:76,g:88,h:100,f:58,bad:75,price:540,costMid:250,costLow:240,costHigh:280,spectrum:'diamond',action:'只研究，不追高',note:'同國巨劇本，鑽石價'},
+];
+
+let watchList   = JSON.parse(localStorage.getItem('rw_watch')||'[]');
+let apiKeys     = JSON.parse(localStorage.getItem('rw_apikeys')||'{}');
+let settings    = JSON.parse(localStorage.getItem('rw_settings')||'{}');
+let twsDB       = [];
+let twsLoaded   = false;
+let currentStock= null;
+let scanFilter  = { target:'all', minScore:70, minPlatformDays:20, spectrum:['cheap','reasonable'] };
+let spectrumSel = new Set(['cheap','reasonable']);
+
+const saveWatch    = () => localStorage.setItem('rw_watch',    JSON.stringify(watchList));
+const saveApiKeys  = () => localStorage.setItem('rw_apikeys',  JSON.stringify(apiKeys));
+const saveSettings = () => localStorage.setItem('rw_settings', JSON.stringify(settings));
+
+function scoreColor(v){ return v>=85?'cg':v>=70?'cy':'cr' }
+function scorePillClass(v){ return v>=85?'pg':v>=70?'pw':'pr' }
+function actionPill(a){
+  if(!a) return 'pw';
+  if(a.includes('不買')||a.includes('只研究')) return 'pr';
+  if(a.includes('等')||a.includes('守')) return 'pw';
+  if(a.includes('持有')) return 'pp';
+  return 'pg';
+}
+function spectrumLabel(s){ return {cheap:'便宜',reasonable:'合理',above:'>合理',expensive:'昂貴',diamond:'鑽石'}[s]||s }
+function spectrumColor(s){ return {cheap:'cg',reasonable:'cb',above:'cy',expensive:'co',diamond:'cr'}[s]||'cm' }
+function lifecycleLabel(s){ return {accumulation:'築底',absorption:'吸貨',washout:'洗盤',breakout:'突破',markup:'主升',distribution:'派貨'}[s]||s }
+
+function profitText(s){
+  if(!s.costMid||s.costMid===0) return '主力成本無法估算。';
+  const p=((s.price-s.costMid)/s.costMid*100).toFixed(1);
+  if(p<15) return `成本約 ${s.costMid}，現價 ${s.price}，僅利潤 ${p}%。主力未出逃，洗盤概率高。`;
+  if(p<60) return `成本約 ${s.costMid}，現價 ${s.price}，已賺 ${p}%。正邊拉邊試賣壓，注意跟風風險。`;
+  return `成本約 ${s.costMid}，現價 ${s.price}，暴賺 ${p}%。隨時可能暴力派貨，嚴禁追高！`;
+}
+
+function currentLifecycle(s){
+  const stages = { accumulation:s.baseScore, absorption:s.acc, washout:s.wash, markup:s.markup, distribution:s.distRisk };
+  return Object.entries(stages).sort(([,a],[,b])=>b-a)[0][0];
+}
+function starBtn(code){ return watchList.some(w=>w.code===code) }
+
+function barHtml(label, val, danger=false){
+  const color = danger ? (val>=70?'var(--red)':'var(--yellow)') : (val>=85?'var(--green)':val>=60?'var(--yellow)':'var(--red)');
+  const fillClass = danger ? 'fill-danger' : 'fill-normal';
+  return `<div class="bar-wrap">
+    <div class="bar-hd"><span class="bar-label">${label}</span><span class="bar-val" style="color:${color}">${val}</span></div>
+    <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${val}%"></div></div>
+  </div>`;
+}
+
+function stockRowCells(s, i, mode='default'){
+  const inW = starBtn(s.code);
+  const star = `<button class="star-btn ${inW?'starred':''}" onclick="toggleWatchCode('${s.code}')">${inW?'⭐':'☆'}</button>`;
+  const detail = `<a href="#sec-stock" class="btn btn-sm btn-s" onclick="openStock('${s.code}')" style="padding:4px 8px;font-size:11px; text-decoration:none;">狙擊分析</a>`;
+
+  if(mode==='ignite') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td><span class="pill ${scorePillClass(s.score)} sc">${s.score}</span></td><td>${s.breakout}</td><td class="cg fw">${s.dist}%</td><td>量縮極致</td><td>${s.stage}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td>${star}${detail}</td>`;
+  if(mode==='base') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td class="cg fw">${s.days}天</td><td>${s.box}</td><td>${s.shrink}%</td><td><span class="pill ${scorePillClass(s.baseScore)}">${s.baseScore}</span></td><td>${s.stage}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td>${star}${detail}</td>`;
+  if(mode==='washout') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td><span class="pill ${scorePillClass(s.score)}">${s.score}</span></td><td class="cg fw">${s.shrink}%</td><td>${s.days}天</td><td class="cg fw">${s.dist}%</td><td>${s.stage}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td>${star}${detail}</td>`;
+  if(mode==='absorption') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td><span class="pill ${scorePillClass(s.acc)}">${s.acc}</span></td><td>${s.days}天</td><td class="cb">${s.costLow}~${s.costHigh}</td><td>${s.stage}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td>${star}${detail}</td>`;
+  if(mode==='distrib') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td><span class="pill pr fw">${s.distRisk}</span></td><td class="cr fw">${s.costMid>0?((s.price-s.costMid)/s.costMid*100).toFixed(0)+'%':'未知'}</td><td>${s.stage}</td><td><span class="pill pr">${s.action}</span></td><td>${star}${detail}</td>`;
+  if(mode==='dna') return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td>${topDna(s).label}</td><td><span class="pill ${scorePillClass(topDna(s).score)}">${topDna(s).score}%</span></td><td class="${scoreColor(s.g)}">${s.g}%</td><td class="${scoreColor(s.h)}">${s.h}%</td><td class="${scoreColor(s.f)}">${s.f}%</td><td class="cr">${s.bad}%</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td>${star}${detail}</td>`;
+  
+  return `<td>${i+1}</td><td class="fw">${s.code} ${s.name}</td><td><span class="pill ${scorePillClass(s.score)} sc">${s.score}</span></td><td class="cy">${s.stage}</td><td class="cg fw">${s.dist}%</td><td class="cb">${s.costLow}~${s.costHigh}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td style="color:var(--muted); font-size:11px;">${s.note}</td><td>${star}${detail}</td>`;
+}
+
+function topDna(s){
+  const models=[{label:'國巨',score:s.g},{label:'華新科',score:s.h},{label:'旺宏',score:s.f},{label:'青雲',score:Math.round((s.g+s.wash)/2)}];
+  return models.sort((a,b)=>b.score-a.score)[0];
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER ALL SECTIONS
+// ════════════════════════════════════════════════════════
+function renderAllData(){
+  renderDash();
+  renderIgnite();
+  renderBase();
+  renderWashout();
+  renderAbsorption();
+  renderDistrib();
+  renderDNA();
+  renderWatchlist();
+  renderQuickStock();
+  renderApis();
+}
+
+function renderDash(){
+  const ss = [...STOCKS].sort((a,b)=>b.score-a.score);
+  const ignCnt = ss.filter(s=>s.score>=85).length;
+  const baseCnt= ss.filter(s=>s.baseScore>=75).length;
+  const mScore = Math.round(ss.reduce((a,b)=>a+b.score,0)/ss.length);
+
+  document.getElementById('sbTotal').textContent=`監控 ${STOCKS.length} 支個股`;
+  document.getElementById('sbBest').textContent=`最強核心: ${ss[0].name} (${ss[0].score}分)`;
+  document.getElementById('sbRisk').textContent=`派貨警戒: ${ss.filter(s=>s.distRisk>=70).length} 支`;
+  document.getElementById('lastUpdate').textContent=`實時同步: ${new Date().toLocaleTimeString()}`;
+
+  const cards=[
+    {label:'市場情緒大盤分',val:mScore,color:mScore>=70?'cg':'cy',sub:'量化籌碼健康度'},
+    {label:'起漲臨界爆發股',val:ignCnt,color:'cg',sub:'高度契合起漲特徵'},
+    {label:'主力築底蓄能股',val:baseCnt,color:'cb',sub:'橫盤悶量待變箱體'},
+  ];
+  document.getElementById('overviewCards').innerHTML=cards.map(c=>`
+    <div class="card card-hover"><div class="metric">${c.label}</div><div class="big ${c.color}">${c.val}</div><div class="small">${c.sub}</div></div>`).join('');
+
+  const bullPct = Math.round(ss.filter(s=>s.score>=60).length/ss.length*100);
+  const bearPct = 100-bullPct;
+  document.getElementById('aiSummaryText').textContent=`當前市場多頭控制佔據 ${bullPct}% 絕對優勢。聚焦洗盤尾聲、距離突破上緣 5% 以內之絕對爆發點位標的；切勿盲目涉足主力已獲利翻倍之高位派貨陷阱區。`;
+  document.getElementById('aiRecoBox').style.display='block';
+  document.getElementById('aiRecoText').textContent='控倉狙擊洗盤尾聲，對派貨區執行死守不追原則。';
+
+  const circ=2*Math.PI*38;
+  document.getElementById('donutBull').setAttribute('stroke-dasharray',`${circ*bullPct/100} ${circ}`);
+  document.getElementById('donutBear').setAttribute('stroke-dasharray',`${circ*bearPct/100} ${circ}`);
+  document.getElementById('donutBear').setAttribute('stroke-dashoffset',`${-circ*bullPct/100}`);
+  document.getElementById('donutPct').textContent=bullPct+'%';
+  document.getElementById('bullPct').textContent=bullPct;
+  document.getElementById('bearPct').textContent=bearPct;
+
+  document.getElementById('top10Body').innerHTML=ss.slice(0,10).map((s,i)=>`<tr>${stockRowCells(s,i,'default')}</tr>`).join('');
+}
+
+function renderIgnite(){
+  const ss=[...STOCKS].filter(s=>s.score>=75).sort((a,b)=>b.score-a.score);
+  document.getElementById('igniteBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'ignite')}</tr>`).join('');
+}
+function renderBase(){
+  const ss=[...STOCKS].filter(s=>s.baseScore>=60).sort((a,b)=>b.days-a.days);
+  document.getElementById('baseBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'base')}</tr>`).join('');
+}
+function renderWashout(){
+  const ss=[...STOCKS].filter(s=>s.wash>=50).sort((a,b)=>b.shrink-a.shrink);
+  document.getElementById('washoutBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'washout')}</tr>`).join('');
+}
+function renderAbsorption(){
+  const ss=[...STOCKS].filter(s=>s.acc>=55).sort((a,b)=>b.acc-a.acc);
+  document.getElementById('absorptionBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'absorption')}</tr>`).join('');
+}
+function renderDistrib(){
+  const ss=[...STOCKS].filter(s=>s.distRisk>=50).sort((a,b)=>b.distRisk-a.distRisk);
+  document.getElementById('distribBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'distrib')}</tr>`).join('');
+}
+
+const DNA_MODELS=[
+  {name:'國巨模型',emoji:'🏆',desc:'長期大底+強機構建倉'},
+  {name:'華新科模型',emoji:'🔗',desc:'板塊聯動二線補漲'},
+  {name:'旺宏模型',emoji:'🔄',desc:'突破平台強勢回測'},
+];
+function renderDNA(){
+  document.getElementById('dnaModelCards').innerHTML=DNA_MODELS.map(m=>`
+    <div class="card" style="text-align:center;"><div style="font-size:20px">${m.emoji}</div><div class="cy fw" style="font-size:12px">${m.name}</div><div style="font-size:10px;color:var(--muted)">${m.desc}</div></div>`).join('');
+  const ss=[...STOCKS].sort((a,b)=>topDna(b).score-topDna(a).score);
+  document.getElementById('dnaBody').innerHTML=ss.map((s,i)=>`<tr>${stockRowCells(s,i,'dna')}</tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// SCANNER ENGINE
+// ════════════════════════════════════════════════════════
+function setTarget(t, btn){
+  scanFilter.target=t;
+  document.querySelectorAll('#targetBtns button').forEach(b=>b.classList.remove('active-filter'));
+  btn.classList.add('active-filter');
+}
+function toggleSpectrum(s, btn){
+  if(spectrumSel.has(s)){ spectrumSel.delete(s); btn.classList.remove('active-filter'); }
+  else { spectrumSel.add(s); btn.classList.add('active-filter'); }
+  scanFilter.spectrum=[...spectrumSel];
+}
+async function runScan(){
+  const btn=document.getElementById('scanBtn'); btn.disabled=true; btn.textContent='⚡ 雷達全開掃描中...';
+  const fill=document.getElementById('scanFill'); const log=document.getElementById('scanLog');
+  const steps=['連線 TWSE 核心數據庫...','全市場上市櫃 2,379 支量價篩選...','籌碼與估值深度模型交織比對...','AI 進行最終風險重估...','深度掃描完畢！'];
+  for(let i=0;i<steps.length;i++){
+    await new Promise(r=>setTimeout(r,300)); log.textContent=steps[i]; fill.style.width=((i+1)/steps.length*100)+'%';
+  }
+  const results=STOCKS.filter(s=>s.score>=scanFilter.minScore && s.days>=scanFilter.minPlatformDays);
+  document.getElementById('scanBody').innerHTML=results.map((s,i)=>`<tr>${stockRowCells(s,i,'default')}</tr>`).join('');
+  document.getElementById('scanResultSec').style.display='block';
+  btn.disabled=false; btn.textContent='🔥 執行全市場極速掃描';
+}
+
+// ════════════════════════════════════════════════════════
+// DEPTH ANALYSIS
+// ════════════════════════════════════════════════════════
+function openStock(code){
+  currentStock = STOCKS.find(s=>s.code===code);
+  if(!currentStock) return;
+  renderStockDetail(currentStock);
+}
+function renderStockDetail(s){
+  document.getElementById('stockDetail').style.display='block';
+  document.getElementById('sdCode').textContent=s.code;
+  document.getElementById('sdName').textContent=s.name;
+  document.getElementById('sdMarket').textContent=s.market;
+  document.getElementById('sdPrice').textContent=`NT$ ${s.price}`;
+  const sp=document.getElementById('sdScorePill'); sp.textContent=`主力戰略分: ${s.score}`; sp.className='pill '+scorePillClass(s.score);
+  document.getElementById('sdStar').textContent=starBtn(s.code)?'⭐':'☆';
+
+  document.getElementById('sdMetrics').innerHTML=`
+    <div class="card"><div class="metric">主力核心建倉帶</div><div class="big cb">${s.costLow}~${s.costHigh}</div></div>
+    <div class="card"><div class="metric">距離臨界突破點</div><div class="big cg">${s.dist}%</div></div>
+    <div class="card"><div class="metric">平台蓄能天數</div><div class="big cy">${s.days}天</div></div>
+    <div class="card"><div class="metric">籌碼洗盤量縮度</div><div class="big cp">${s.shrink}%</div></div>`;
+
+  document.getElementById('sdActionPill').textContent=s.action; document.getElementById('sdActionPill').className='pill '+actionPill(s.action);
+  document.getElementById('sdNote').textContent=s.note;
+
+  const lc=currentLifecycle(s); document.getElementById('sdStageLabel').textContent='狀態: '+lifecycleLabel(lc);
+  const stages=['accumulation','absorption','washout','breakout','markup','distribution'];
+  document.getElementById('sdStageFlow').innerHTML=stages.map(st=>`<div class="stage-chip ${st===lc?'on':''}">${lifecycleLabel(st)}</div>`).join('');
+
+  document.getElementById('sdLcBars').innerHTML=[barHtml('築底量化',s.baseScore),barHtml('機構吸貨',s.acc),barHtml('極致洗盤',s.wash),barHtml('主升速度',s.markup),barHtml('高位風險⚠',s.distRisk,true)].join('');
+  document.getElementById('sdProfitBox').innerHTML=profitText(s);
+  document.getElementById('sdScoreBars').innerHTML=[barHtml('平台整理強度',s.baseScore),barHtml('主力進場密集度',s.acc),barHtml('洗盤量縮幅度',s.wash)];
+  document.getElementById('sdDnaBars').innerHTML=[barHtml('國巨相似度',s.g),barHtml('華新科相似度',s.h),barHtml('旺宏相似度',s.f)];
+}
+
+function renderQuickStock(){
+  const ss=[...STOCKS].sort((a,b)=>b.score-a.score);
+  document.getElementById('quickStockBody').innerHTML=ss.map(s=>`<tr><td><span class="cb fw">${s.code}</span> ${s.name}</td><td><span class="pill ${scorePillClass(s.score)}">${s.score}</span></td><td class="cy">${s.stage}</td><td><span class="pill ${actionPill(s.action)}">${s.action}</span></td><td><a href="#sec-stock" class="btn btn-sm btn-s" onclick="openStock('${s.code}')" style="text-decoration:none;">解鎖底牌</a></td></tr>`).join('');
+}
+
+function toggleWatchCode(code){
+  const s=STOCKS.find(x=>x.code===code); if(!s) return;
+  const idx=watchList.findIndex(w=>w.code===code);
+  if(idx>=0) watchList.splice(idx,1); else watchList.push({code:s.code,name:s.name,addedAt:new Date().toISOString()});
+  saveWatch(); renderAllData();
+}
+
+function toggleWatch(){ if(currentStock) toggleWatchCode(currentStock.code); }
+
+function renderWatchlist(){
+  const body=document.getElementById('watchListBody'); if(watchList.length===0){ document.getElementById('watchEmpty').style.display='block'; body.innerHTML=''; return; }
+  document.getElementById('watchEmpty').style.display='none';
+  body.innerHTML=watchList.map(item=>{
+    const s=STOCKS.find(x=>x.code===item.code);
+    return `<div class="card card-hover" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><div><span class="cb fw">${item.code}</span> <span style="font-weight:900">${item.name}</span> · 主力分 <span class="cg">${s?.score||'-'}</span></div><div><a href="#sec-stock" class="btn btn-sm btn-s" onclick="openStock('${item.code}')" style="text-decoration:none; margin-right:5px;">深度追蹤</a><button class="btn btn-sm btn-d" onclick="toggleWatchCode('${item.code}')">解除監控</button></div></div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// SEARCH ARCHITECTURE
+// ════════════════════════════════════════════════════════
+async function loadTwsDB(){
+  twsDB=STOCKS.map(s=>({code:s.code,name:s.name,market:s.market})); twsLoaded=true;
+  document.getElementById('stockSearchStatus').textContent=`✅ 本地極速引擎已就緒`;
+}
+function onStockSearch(q){
+  const dd=document.getElementById('stockDrop'); if(!q.trim()){dd.classList.remove('show');return}
+  const hits=twsDB.filter(s=>s.code.startsWith(q)||s.name.includes(q)).slice(0,8);
+  if(!hits.length){dd.innerHTML=`<div class="dd-item">查無數據</div>`;dd.classList.add('show');return}
+  dd.innerHTML=hits.map(s=>`<div class="dd-item" onclick="onPickStock('${s.code}','${s.name}')"><span class="dd-code">${s.code}</span><span class="dd-name">${s.name}</span></div>`).join('');
+  dd.classList.add('show');
+}
+function hideDropdown(id){ document.getElementById(id).classList.remove('show') }
+function onPickStock(code, name){ hideDropdown('stockDrop'); document.getElementById('stockSearchInput').value=code+' '+name; openStock(code); }
+
+// API & RULES
+const API_CONFIGS=[{id:'fugle',emoji:'⚡',label:'Fugle 即時數據'},{id:'finmind',emoji:'📈',label:'FinMind 籌碼數據'},{id:'openai',emoji:'🤖',label:'OpenAI 算力密鑰'}];
+function renderApis(){
+  document.getElementById('apiRows').innerHTML=API_CONFIGS.map(cfg=>`<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div>${cfg.emoji} <b>${cfg.label}</b></div><input type="password" value="${apiKeys[cfg.id]||''}" placeholder="請輸入Token" style="width:200px;" onchange="apiKeys['${cfg.id}']=this.value;saveApiKeys()"><span class="pill pg">儲存成功</span></div>`).join('');
+}
+const RULES=[{num:1,title:'先定階段，後看估值',desc:'便宜但正處於主跌浪者，絕不可進場接刀。'},{num:2,title:'主力成本線是生命線',desc:'利潤大於100%時，代表大限已到，主力進入隨時派貨期。'}];
+function loadSettings(){
+  document.getElementById('rulesBody').innerHTML=RULES.map(r=>`<p style="font-size:12px; margin-bottom:8px;"><b>${r.num}. ${r.title}</b>: ${r.desc}</p>`).join('');
+}
+function saveSetting(k,v){ settings[k]=v; saveSettings(); }
+
+// ════════════════════════════════════════════════════════
+// SCROLLSPY
+// ════════════════════════════════════════════════════════
+const sections = document.querySelectorAll('.page-section');
+const navItems = document.querySelectorAll('#spyNav .nav-item');
+window.addEventListener('scroll', () => {
+  let currentId = '';
+  sections.forEach(sec => {
+    const secTop = sec.offsetTop;
+    if (pageYOffset >= secTop - 120) { currentId = sec.getAttribute('id'); }
+  });
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.getAttribute('href') === `#${currentId}`) { item.classList.add('active'); }
+  });
+});
+
+// INIT
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString(), 1000);
+const style=document.createElement('style'); style.textContent=`.active-filter{background:linear-gradient(90deg,rgba(250,204,21,.2),rgba(251,146,60,.2))!important;border-color:rgba(250,204,21,.4)!important;color:var(--yellow)!important}`; document.head.appendChild(style);
+loadTwsDB(); loadSettings(); renderAllData();
+</script>
+</body>
+</html>

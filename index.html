@@ -147,7 +147,7 @@ input:focus,select:focus{outline:0;border-color:rgba(56,189,248,.4)}
 .stage-chip.on{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.45);color:#86efac}
 .stage-chip.warn{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.4);color:#fca5a5}
 .profit-box{background:#070d1b;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12px;line-height:1.8;color:#cbd5e1;margin-top:8px}
-.api-status{padding:8px 12px;border-radius:10px;background:#060d1b;border:1px solid var(--line);font-size:12px}
+.api-status{padding:6px 12px;border-radius:10px;background:#060d1b;border:1px solid var(--line);font-size:11px;margin-top:6px;font-weight:700;display:inline-block}
 .scan-bar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0}
 .scan-fill{height:100%;background:linear-gradient(90deg,#facc15,#fb923c)}
 .star-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px}
@@ -448,7 +448,7 @@ input:focus,select:focus{outline:0;border-color:rgba(56,189,248,.4)}
       <section id="sec-apis" class="page-section">
         <h2>🔑 機密密鑰數據控制中心</h2>
         <div class="note" style="margin-bottom:15px; font-size:12px;">安全警告：所有 API Key 均依託瀏覽器本地安全緩存（LocalStorage），不經由任何第三方伺服器。</div>
-        <div id="apiRows" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="apiRows" style="display:flex; flex-direction:column; gap:16px;"></div>
       </section>
 
       <hr class="section-divider">
@@ -755,11 +755,104 @@ function onStockSearch(q){
 function hideDropdown(id){ document.getElementById(id).classList.remove('show') }
 function onPickStock(code, name){ hideDropdown('stockDrop'); document.getElementById('stockSearchInput').value=code+' '+name; openStock(code); }
 
-// API & RULES
-const API_CONFIGS=[{id:'fugle',emoji:'⚡',label:'Fugle 即時數據'},{id:'finmind',emoji:'📈',label:'FinMind 籌碼數據'},{id:'openai',emoji:'🤖',label:'OpenAI 算力密鑰'}];
+// ════════════════════════════════════════════════════════
+// API CONTROL CENTER & REAL LIVE TESTER
+// ════════════════════════════════════════════════════════
+const API_CONFIGS = [
+  {id:'fugle',   emoji:'⚡', label:'Fugle 即時報價 API',     desc:'用於獲取盤中台股即時量價、突破警報'},
+  {id:'finmind', emoji:'📈', label:'FinMind 籌碼 Token',    desc:'用於串接歷史K線與三大法人機構籌碼比重'},
+  {id:'openai',  emoji:'🤖', label:'OpenAI 算力大腦 Key',   desc:'驅動 GPT-4o 模型對每日雷達進行量化點評'}
+];
+
 function renderApis(){
-  document.getElementById('apiRows').innerHTML=API_CONFIGS.map(cfg=>`<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div>${cfg.emoji} <b>${cfg.label}</b></div><input type="password" value="${apiKeys[cfg.id]||''}" placeholder="請輸入Token" style="width:200px;" onchange="apiKeys['${cfg.id}']=this.value;saveApiKeys()"><span class="pill pg">儲存成功</span></div>`).join('');
+  document.getElementById('apiRows').innerHTML = API_CONFIGS.map(cfg => {
+    const savedValue = apiKeys[cfg.id] || '';
+    return `
+    <div class="card" style="padding:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <span style="font-size:18px; margin-right:6px;">${cfg.emoji}</span>
+          <b style="font-size:14px; color:var(--text);">${cfg.label}</b>
+          <div style="font-size:11px; color:var(--muted); margin-top:2px;">${cfg.desc}</div>
+        </div>
+        <div id="apiBadge_${cfg.id}">
+          ${savedValue ? '<span class="pill pg">已儲存</span>' : '<span class="pill cm">未設定</span>'}
+        </div>
+      </div>
+      
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input type="password" id="apiInput_${cfg.id}" value="${savedValue}" placeholder="請輸入密鑰或 Token" style="flex:1;" onchange="updateApiKey('${cfg.id}', this.value)">
+        <button class="btn btn-sm btn-s" onclick="testApiKey('${cfg.id}')" id="testBtn_${cfg.id}">⚡ 測試連線</button>
+      </div>
+      <div id="apiStatus_${cfg.id}" class="api-status" style="display:none;"></div>
+    </div>`;
+  }).join('');
 }
+
+function updateApiKey(id, val){
+  apiKeys[id] = val.trim();
+  saveApiKeys();
+  const badge = document.getElementById(`apiBadge_${id}`);
+  badge.innerHTML = val.trim() ? '<span class="pill pg">已儲存</span>' : '<span class="pill cm">未設定</span>';
+}
+
+async function testApiKey(id) {
+  const keyInput = document.getElementById(`apiInput_${id}`).value.trim();
+  const statusDiv = document.getElementById(`apiStatus_${id}`);
+  const testBtn = document.getElementById(`testBtn_${id}`);
+  
+  statusDiv.style.display = 'inline-block';
+  statusDiv.className = 'api-status cm';
+  statusDiv.style.color = 'var(--yellow)';
+  statusDiv.textContent = '🔄 正在建立安全連線中...';
+  testBtn.disabled = true;
+
+  if (!keyInput) {
+    statusDiv.style.color = 'var(--red)';
+    statusDiv.textContent = '❌ 測試失敗：輸入框為空，請填入密鑰再測試';
+    testBtn.disabled = false;
+    return;
+  }
+
+  try {
+    let responseOk = false;
+    
+    if (id === 'fugle') {
+      // 測試連線富果最輕量的台積電即時行情
+      const res = await fetch('https://api.fugle.tw/marketdata/v1.0/stock/intraday/quote/2330', {
+        headers: { 'X-API-KEY': keyInput }
+      });
+      responseOk = res.ok;
+    } 
+    else if (id === 'finmind') {
+      // 測試連線 FinMind 基礎股票清單介面
+      const res = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo&data_id=2330&token=${keyInput}`);
+      responseOk = res.ok;
+    } 
+    else if (id === 'openai') {
+      // 測試連線 OpenAI 最基礎模型清單驗證 Key 權限
+      const res = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${keyInput}` }
+      });
+      responseOk = res.ok;
+    }
+
+    if (responseOk) {
+      statusDiv.style.color = 'var(--green)';
+      statusDiv.textContent = `✅ 連線成功！此 ${id.toUpperCase()} 密鑰完全具備實戰通訊權限。`;
+    } else {
+      statusDiv.style.color = 'var(--red)';
+      statusDiv.textContent = '❌ 連線失敗：密鑰無效、過期，或遭到該 API 伺服器拒絕（CORS 限制）。';
+    }
+  } catch (err) {
+    statusDiv.style.color = 'var(--red)';
+    statusDiv.textContent = `❌ 網路阻斷：連線遭遇錯誤 (${err.message})`;
+  } finally {
+    testBtn.disabled = false;
+  }
+}
+
+// RULES
 const RULES=[{num:1,title:'先定階段，後看估值',desc:'便宜但正處於主跌浪者，絕不可進場接刀。'},{num:2,title:'主力成本線是生命線',desc:'利潤大於100%時，代表大限已到，主力進入隨時派貨期。'}];
 function loadSettings(){
   document.getElementById('rulesBody').innerHTML=RULES.map(r=>`<p style="font-size:12px; margin-bottom:8px;"><b>${r.num}. ${r.title}</b>: ${r.desc}</p>`).join('');
